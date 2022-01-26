@@ -32,14 +32,14 @@ if len(sys.argv) == 5:  # We expect xtf_path, rules and tolerance
 else:
     raise Exception("Debes ingresar los siguientes parámetros: xtf_path (str), rules (list),  tolerance (int)!")
 
-QGIS_PREFIX_PATH = '/docs/dev/qgis/core/QGIS/builds/3_22_0/output'
-QGIS_PROCESSING_PLUGIN_DIR = '/docs/dev/qgis/core/QGIS/builds/3_22_0/output/python/plugins'
-QGIS_PLUGINS_DIR = '/home/germap/.local/share/QGIS/QGIS3/profiles/default/python/plugins'
-OUTPUT_DIR = os.path.dirname(XTF_PATH)  # '/tmp'
-# TOLERANCE = 1  # In millimeters
-
+QGIS_PREFIX_PATH = '/usr'
+QGIS_PROCESSING_PLUGIN_DIR = '/usr/share/qgis/python/plugins'
+QGIS_PLUGINS_DIR = '/home/geoideal/.local/share/QGIS/QGIS3/profiles/default/python/plugins'
+OUTPUT_DIR = '/srv/qgis/qr_output/'
+#TOLERANCE = 1  # In millimeters
 
 LOG_FILE_PATH = os.path.join(OUTPUT_DIR, "log_{}.txt".format(TIMESTAMP))
+
 
 def log(text, to_file=True):
     sys.stdout.write("\n")
@@ -53,6 +53,8 @@ if os.path.exists(LOG_FILE_PATH):
 
 log("Validating quality rules using Asistente LADM-COL. Starting...")
 log("\nLog file: {}".format(LOG_FILE_PATH))
+
+log("\nParameters:\n...path: {}\n...quality_rules: {}\n...tolerance: {}\n...timestamp: {}".format(XTF_PATH, quality_rules, TOLERANCE, TIMESTAMP))
 
 # GEOPACKAGE
 db_conn = {'dbfile': XTF_PATH}  # '/docs/geodata/gpkgs/pruebas/test_quality_rules_tolerance.gpkg'}
@@ -141,7 +143,6 @@ log("\n[INFO] Output folder created! '{}'".format(OUTPUT_DIR))
 # ------------------------------------------------------------------------------
 # -------------------------------- START QGIS ----------------------------------
 # ------------------------------------------------------------------------------
-
 import sys
 from qgis.core import (QgsApplication, 
                        QgsProcessingFeedback,
@@ -151,12 +152,15 @@ from qgis.testing import (unittest,
                           start_app)
 import qgis.utils
 
+log("\n[DEBUG] Starting QGIS app...")
 start_app()
-
+log("\n[DEBUG] QGIS app started!")
 
 QgsApplication.setPrefixPath(QGIS_PREFIX_PATH, True)
-qgs = QgsApplication([], False)
-qgs.initQgis()
+log("\n[DEBUG] Creating QgsApplication...")
+#qgs = QgsApplication([], False)
+log("\n[DEBUG] Initializing QGIS...")
+QgsApplication.initQgis()
 log("\n[INFO] QGIS initialized!")
 
 from qgis.PyQt.sip import SIP_VERSION_STR
@@ -171,7 +175,6 @@ log("\n[INFO] ...PyQt version: {}".format(PYQT_VERSION_STR))
 # ------------------------------------------------------------------------------
 # ----------------------------- START PROCESSING -------------------------------
 # ------------------------------------------------------------------------------
-
 sys.path.append(QGIS_PROCESSING_PLUGIN_DIR)
 import processing
 from processing.core.Processing import Processing
@@ -180,11 +183,9 @@ if Qgis.QGIS_VERSION_INT < 31605:
     QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
 log("\n[INFO] Processing initialized!")
 
-
 # ------------------------------------------------------------------------------
 # ---------------------------- START MODEL BAKER -------------------------------
 # ------------------------------------------------------------------------------
-
 from qgis.testing.mocked import get_iface
 iface = get_iface()
 sys.path.append(QGIS_PLUGINS_DIR)
@@ -200,11 +201,9 @@ def import_qgis_model_baker():
 import_qgis_model_baker()
 log("\n[INFO] Model Baker initialized!")
 
-
 # ------------------------------------------------------------------------------
 # ------------------------- START ASISTENTE LADM-COL ---------------------------
 # ------------------------------------------------------------------------------
-
 from asistente_ladm_col.asistente_ladm_col_plugin import AsistenteLADMCOLPlugin
 from asistente_ladm_col.app_interface import AppInterface
 from asistente_ladm_col.logic.quality.quality_rule_engine import QualityRuleEngine
@@ -218,11 +217,9 @@ log("\n[INFO] Asistente LADM-COL initialized!")
 
 # TODO: Pasar el XTF a GPKG
 
-
 # ------------------------------------------------------------------------------
 # ------------------------- PREPARE ENVIRONMENT FOR QR -------------------------
 # ------------------------------------------------------------------------------
-
 app = AppInterface()
 provider = 'gpkg' if 'dbfile' in db_conn else 'pg'
 db = asistente_ladm_col_plugin.conn_manager.get_opened_db_connector_for_tests(
@@ -245,21 +242,17 @@ def get_qr_key(key):
 quality_rules = [get_qr_key(k) for k in quality_rules]
 qr_engine = QualityRuleEngine(db, quality_rules, TOLERANCE)
 
-
 # ------------------------------------------------------------------------------
 # ------------------------------ RUN QUALITY RULES -----------------------------
 # ------------------------------------------------------------------------------
-
 log("\n[INFO] Testing {} quality rules with {}mm of tolerance...".format(
     len(quality_rules),
     TOLERANCE))
 res = qr_engine.validate_quality_rules()
 
-
 # ------------------------------------------------------------------------------
 # ------------------------------- PREPARE RESULTS ------------------------------
 # ------------------------------------------------------------------------------
-
 dict_res = {qr_code:res.result(qr_code).level for qr_code in quality_rules}
 success_qrs = [k for k,v in dict_res.items() if v == Qgis.Success]
 error_qrs = [k for k,v in dict_res.items() if v == Qgis.Critical]
@@ -290,7 +283,6 @@ export_title_text_to_pdf(pdf_filepath, log_result.title, log_result.text)
 
 log("\n[INFO] Done!")
 
-qgs.exitQgis()
+QgsApplication.exitQgis()
 
 os._exit(os.EX_OK)
-

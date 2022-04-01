@@ -35,7 +35,7 @@ else:
 QGIS_PREFIX_PATH = '/usr'
 QGIS_PROCESSING_PLUGIN_DIR = '/usr/share/qgis/python/plugins'
 QGIS_PLUGINS_DIR = '/home/geoideal/.local/share/QGIS/QGIS3/profiles/default/python/plugins'
-OUTPUT_DIR = '/srv/qgis/qr_output/'
+OUTPUT_DIR = '/app/qr_output/'
 #TOLERANCE = 1  # In millimeters
 
 LOG_FILE_PATH = os.path.join(OUTPUT_DIR, "log_{}.txt".format(TIMESTAMP))

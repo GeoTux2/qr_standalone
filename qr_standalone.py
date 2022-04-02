@@ -267,6 +267,7 @@ error_layers = res.all_error_layers()
 if error_layers:
     gpkg_filepath = os.path.join(OUTPUT_DIR, 
                                  "Reglas_de_Calidad_{}.gpkg".format(TIMESTAMP))
+    log("\n[INFO] GPKG-PATH: {}".format(gpkg_filepath))
     processing.run("native:package", {
                    "LAYERS": error_layers,
                    "OUTPUT": gpkg_filepath,
@@ -279,6 +280,7 @@ log_result = qr_engine.quality_rule_logger.get_log_result()
 pdf_filepath = os.path.join(OUTPUT_DIR, 
                             "Reporte_Reglas_de_Calidad_{}.pdf".format(
                             TIMESTAMP))
+log("\n[INFO] PDF-PATH: {}".format(pdf_filepath))
 export_title_text_to_pdf(pdf_filepath, log_result.title, log_result.text)
 
 log("\n[INFO] Done!")
